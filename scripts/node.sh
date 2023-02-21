@@ -6,6 +6,9 @@ set -euxo pipefail
 
 config_path="/vagrant/configs"
 
+# install nfsv4 client
+apt-get  install nfs-common
+
 /bin/bash $config_path/join.sh -v
 
 sudo -i -u vagrant bash << EOF
