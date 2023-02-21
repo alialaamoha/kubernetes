@@ -2,7 +2,7 @@
 
 Setting up a Kubernetes cluster and alot of addons like longhorn , gitlab and  Istio service mesh 
 
-**Note**: Because of using virtual machines to setup distributed Kubernetes cluster will bring high load on your computer
+**Note**: using virtual machines to setup distributed Kubernetes cluster will bring a high load on your computer
 
 ## Demo
 
@@ -10,19 +10,22 @@ Setting up a Kubernetes cluster and alot of addons like longhorn , gitlab and  I
 
 We will create a Kubernetes 1.15.0 cluster with 3 nodes which contains the components below:
 
-| IP           | Hostname | Componets                                |
-| ------------ | -------- | ---------------------------------------- |
-| 172.17.8.101 | node1    | kube-apiserver, kube-controller-manager, kube-scheduler, etcd, kubelet, docker, flannel, dashboard |
-| 172.17.8.102 | node2    | kubelet, docker, flannel、traefik         |
-| 172.17.8.103 | node3    | kubelet, docker, flannel                 |
+| IP            | Hostname | Componets                                |
+| ------------  | -------- | ---------------------------------------- |
+| 192.168.56.10 | node1    | kube-apiserver, kube-controller-manager, kube-scheduler, etcd, kubelet, docker, flannel, dashboard |
+| 192.168.56.11  | node2    | kubelet, crio, calico、traefik , Metallp         |
+| 192.168.56.12  | node3    | kubelet, crio, flannel , Metallb                 |
+**increase the count of workers form the yaml settings file**
 
-The default setting will create the private network from 172.17.8.101 to 172.17.8.103 for nodes, and it will use the host's DHCP for the public IP.
+The default setting will create the private network from 192.168.56.10 to 192.168.56.29 for nodes, and it will use the host's DHCP for the public IP.
 
 The kubernetes service's VIP range is `10.254.0.0/16`.
 
-The container network range is `170.33.0.0/16` owned by flanneld with `host-gw` backend.
+The container network range is `172.16.1.0/16` owned by flanneld calico
 
-`kube-proxy` will run as `ipvs` mode.
+The Metallp loadbalancer ip ranges is ' 192.168.56.30-192.168.56.60' 
+
+all the settings you can change from the settings folder 
 
 ## Usage
 
@@ -30,9 +33,9 @@ The container network range is `170.33.0.0/16` owned by flanneld with `host-gw` 
 
 * Host server with 8G+ mem(More is better), 60G disk, 8 core cpu at lease
 * **Vagrant latest（2.2.16 recommended）**
-* **VirtualBox 5.2 (5.2+ is not supported)**
-* Kubernetes 1.16 (support the latest version 1.16.14)
-* MacOS/Linux and linux
+* **VirtualBox 7**
+* Kubernetes 1.26.1-00 (support the latest version 1.16.14)
+* MacOS/Linux and windows
 * NFS Server Package 
 
 ### Supported Add-ons
@@ -48,16 +51,18 @@ The container network range is `170.33.0.0/16` owned by flanneld with `host-gw` 
 **Optional**
 
 - gitlab includes Cert-manager 
-- artifactory
-- harbor
-- MinIO
-- Argocd
+- artifactory for code dependency 
+- harbor "private registry for images and helm charts"
+- MinIO  "S3 object store"
+- Argocd  "Gitops" 
 - Helm
+- Vault 
+- ElasticSearch + Fluentd + Kibana
+- Heapster + InfluxDB + Grafana
 - Istio service mesh
 - Vistio
 - Kiali
-- ElasticSearch + Fluentd + Kibana
-- Heapster + InfluxDB + Grafana
+- valero
 
 **aplications** 
 - postgress operator
@@ -67,17 +72,14 @@ The container network range is `170.33.0.0/16` owned by flanneld with `host-gw` 
 
 #### Setup
 
-Clone this repo into your local machine and download kubernetes binary release first and move them into the root directory of this repo (GitBash for the Windows must be run as Administrator to install ```vagrant-winnfsd``` plugin).
+Clone this repo into your local machine and download kubernetes and helm binary release first and move them into the root directory of this repo (GitBash for the Windows must be run as Administrator to install ```vagrant``` plugin).
 
 ```bash
 vagrant plugin install vagrant-winnfsd
 git clone https://github.com/rootsongjc/kubernetes-vagrant-centos-cluster.git
-cd kubernetes-vagrant-centos-cluster
+
 ```
 
-**Note**: If this your first time to setup Kubernetes cluster with vagrant, just skip the above step and run the following command, it will download Kubernetes release automatically for you and no need to download the release next time. You can find the download address the Kubernetes releases [here](https://kubernetes.io/docs/imported/release/notes/). Download the release of version you wanted, move it to the root of this repo, rename it to `kubernetes-server-linux-amd64.tar.gz` then the `install.sh` script will skip the download step.
-
-As this repo folder is mounted to `/vagrant` with NFS in virtual machines, you may be required to enter a password to for administrator privileges during the installation.
 
 Set up Kubernetes cluster with vagrant.
 
@@ -87,39 +89,12 @@ vagrant up
 
 Wait about 10 minutes the kubernetes cluster will be setup automatically.
 
-If you have difficult to vagrant up the cluster because of have no way to download the `centos/7` box, you can download the box and add it first.
-
-**Add centos/7 box manually**
-
-```bash
-wget -c http://cloud.centos.org/centos/7/vagrant/x86_64/images/CentOS-7-x86_64-Vagrant-1801_02.VirtualBox.box
-vagrant box add CentOS-7-x86_64-Vagrant-1804_02.VirtualBox.box --name centos/7
-```
-
-The next time you run `vagrant up`, vagrant will import the local box automatically.
-
 #### Note for Mac
 
 VirtualBox may be blocked by Mac's security limit.
 Go to `System Preferences` - `Security & Privacy` - `Gerneral` click the blocked app and unblock it.
 
 Run  `sudo "/Library/Application Support/VirtualBox/LaunchDaemons/VirtualBoxStartup.sh" restart` in terminal and then `vagrant up`.
-
-#### Note for Windows
-
-- The project will run some bash script under the VirtualMachines. These scripts line ending need to be in LF. Git for windows set ```core.autocrlf``` true by default at the installation time. When you clone this project repository, this parameter (set to true) ask git to change all line ending to CRLF. This behavior need to be changed before cloning the repository (or after for each files by hand). We recommend to turn this off by running ```git config --global core.autocrlf false``` and ```git config --global core.eol lf``` before cloning. Then, after cloning, do not forget to turn the behavior back if you want to run other windows projects: ```git config --global core.autocrlf true``` and ```git config --global core.eol crlf```.
-
-
-If you have executed the previous git global configuration then, you will not see these output while node3 is going to be complete:
-
-```bash
-    node3: Created symlink from /etc/systemd/system/multi-user.target.wants/kubelet.service to /usr/lib/systemd/system/kubelet.service.
-    node3: Created symlink from /etc/systemd/system/multi-user.target.wants/kube-proxy.service to /usr/lib/systemd/system/kube-proxy.service.
-    node3: deploy coredns
-    node3: /tmp/vagrant-shell: ./dns-deploy.sh: /bin/bash^M: bad interpreter: No such file or directory
-    node3: error: no objects passed to apply
-    node3: /home/vagrant
-```
 
 Solution:
 
@@ -173,37 +148,11 @@ kubectl get pods --namespace=kube-system
 
 **Kubernetes dashboard**
 
-Kubernetes dashboard URL: <https://172.17.8.101:8443>
-
-Get the admin token:
-
-```bash
-kubectl -n kube-system describe secret `kubectl -n kube-system get secret|grep admin-token|cut -d " " -f1`|grep "token:"|tr -s " "|cut -d " " -f2
-```
+refere to the readme section for kubernetes dashboard
 
 **Note**: You can see the token message on console when  `vagrant up` done.
 
 ![Kubernetes dashboard animation](images/dashboard-animation.gif)
-
-Only if you install the heapter addon bellow that you can see the metrics.
-
-**Visit from Chrome/Firefox on Windows**
-
-If you see the hint `NET::ERR_CERT_INVALID`, follow these steps:
-
-```bash
-vagrant ssh node1
-sudo -i
-cd /vagrant/addon/dashboard/
-mkdir certs
-openssl req -nodes -newkey rsa:2048 -keyout certs/dashboard.key -out certs/dashboard.csr -subj "/C=/ST=/L=/O=/OU=/CN=kubernetes-dashboard"
-openssl x509 -req -sha256 -days 365 -in certs/dashboard.csr -signkey certs/dashboard.key -out certs/dashboard.crt
-kubectl delete secret kubernetes-dashboard-certs -n kube-system
-kubectl create secret generic kubernetes-dashboard-certs --from-file=certs -n kube-system
-kubectl delete pods $(kubectl get pods -n kube-system|grep kubernetes-dashboard|awk '{print $1}') -n kube-system #re-install dashboard
-```
-
-Refresh the browser and click `Advance`, skip it. You will see the dashboard page there.
 
 ## Components
 
