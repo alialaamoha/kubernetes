@@ -13,7 +13,7 @@ sudo -i -u vagrant kubectl apply -f https://raw.githubusercontent.com/metallb/me
 
 # Enhanments tip: to load ip pools from settings file 
 # ip ranges for external advertised loadbalancer cluster 
-cat <<EOF | sudo -i -u vagrant kubectl apply -f - 
+cat <<EOF | kubectl apply -f - 
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -25,7 +25,7 @@ spec:
 EOF
 
 
-cat <<EOF | sudo -i -u vagrant kubectl apply -f -
+cat <<EOF | kubectl apply -f -
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
